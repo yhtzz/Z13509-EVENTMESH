@@ -1,0 +1,36 @@
+{
+  "emname": "S4OPEVENTMESH",
+  "namespace": "handdm2/eventing/s4hc",
+  "version": "1.1.0",
+  "options": {
+    "management": true,
+    "messagingrest": true,
+    "messaging": true
+  },
+  "rules": {
+    "queueRules": {
+        "publishFilter": [
+            "*"
+        ],
+        "subscribeFilter": [
+            "*"
+        ]
+    },
+    "topicRules": {
+        "publishFilter": [
+            "*"
+        ],
+        "subscribeFilter": [
+            "*"
+        ]
+    }
+  },
+	"xs-security": { 
+     "oauth2-configuration": { 
+      "credential-types": [
+        "binding-secret",
+        "x509"
+      ]
+    }
+  }
+}

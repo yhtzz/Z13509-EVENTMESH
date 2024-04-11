@@ -1,0 +1,143 @@
+_schema-version: "3.1"      
+ID: z13509-eventmesh      
+description: A simple CAP project.      
+version: 1.0.0      
+modules:      
+  - name: z13509-eventmesh-srv      
+    type: nodejs      
+    path: gen/srv      
+    requires:      
+      - name: z13509-eventmesh-destination      
+      - name: z13509-eventmesh-db      
+      - name: z13509-eventmesh-uaa      
+      - name: z13509-eventmesh-connectivity      
+      - name: z13509-eventmesh-em      
+    provides:      
+      - name: srv-api      
+        properties:      
+          srv-url: ${default-url}      
+    parameters:      
+      buildpack: nodejs_buildpack      
+    build-parameters:      
+      builder: npm      
+  - name: z13509-eventmesh-db-deployer      
+    type: hdb      
+    path: gen/db      
+    requires:      
+      - name: z13509-eventmesh-db      
+    parameters:      
+      buildpack: nodejs_buildpack      
+  - name: z13509-eventmesh-destinations      
+    type: com.sap.application.content      
+    requires:      
+      - name: z13509-eventmesh-uaa      
+        parameters:      
+          service-key:      
+            name: z13509-eventmesh-uaa-key      
+      - name: z13509-eventmesh-html5-repo-host      
+        parameters:      
+          service-key:      
+            name: z13509-eventmesh-html5-repo-host-key      
+      - name: srv-api      
+      - name: z13509-eventmesh-destination      
+        parameters:      
+          content-target: true      
+    parameters:      
+      content:      
+        instance:      
+          destinations:      
+            - Authentication: OAuth2UserTokenExchange      
+              Name: z13509-eventmesh-app-srv      
+              TokenServiceInstanceName: z13509-eventmesh-uaa      
+              TokenServiceKeyName: z13509-eventmesh-uaa-key      
+              URL: ~{srv-api/srv-url}      
+              sap.cloud.service: z13509-eventmesh.service      
+            - Name: z13509-eventmesh-html5-repo-host      
+              ServiceInstanceName: z13509-eventmesh-html5-repo-host      
+              ServiceKeyName: z13509-eventmesh-html5-repo-host-key      
+              sap.cloud.service: z13509-eventmesh.service      
+            - Authentication: OAuth2UserTokenExchange      
+              Name: z13509-eventmesh-uaa      
+              ServiceInstanceName: z13509-eventmesh-uaa      
+              ServiceKeyName: z13509-eventmesh-uaa-key      
+              sap.cloud.service: z13509-eventmesh.service      
+          existing_destinations_policy: update      
+    build-parameters:      
+      no-source: true      
+  - name: z13509-eventmesh      
+    type: approuter.nodejs      
+    path: app\router      
+    parameters:      
+      keep-existing-routes: true      
+      disk-quota: 512M      
+      memory: 256M      
+    requires:      
+      - name: srv-api      
+        group: destinations      
+        properties:      
+          name: srv-api # must be used in xs-app.json as well      
+          url: ~{srv-url}      
+          forwardAuthToken: true      
+      - name: z13509-eventmesh-uaa      
+resources:      
+  - name: z13509-eventmesh-em      
+    type: org.cloudfoundry.managed-service      
+    parameters:      
+      path: ./enterprise-messaging.json      
+      service: enterprise-messaging      
+      service-plan: default      
+  - name: z13509-eventmesh-connectivity      
+    type: org.cloudfoundry.managed-service      
+    parameters:      
+      service: connectivity      
+      service-plan: lite      
+  - name: z13509-eventmesh-destination      
+    type: org.cloudfoundry.managed-service      
+    parameters:      
+      config:      
+        HTML5Runtime_enabled: true      
+        init_data:      
+          instance:      
+            destinations:      
+              - Authentication: NoAuthentication      
+                Name: ui5      
+                ProxyType: Internet      
+                Type: HTTP      
+                URL: https://ui5.sap.com      
+            existing_destinations_policy: update      
+        version: 1.0.0      
+      service: destination      
+      service-plan: lite      
+  - name: z13509-eventmesh-db      
+    type: com.sap.xs.hdi-container      
+    parameters:      
+      service: hana      
+      service-plan: hdi-shared      
+  - name: z13509-eventmesh-uaa      
+    type: org.cloudfoundry.managed-service      
+    parameters:      
+      config:      
+        tenant-mode: dedicated      
+        xsappname: z13509-eventmesh-${space}      
+      path: ./xs-security.json      
+      service: xsuaa      
+      service-plan: application      
+  - name: z13509-eventmesh-html5-repo-host      
+    type: org.cloudfoundry.managed-service      
+    parameters:      
+      service: html5-apps-repo      
+      service-plan: app-host      
+parameters:      
+  deploy_mode: html5-repo      
+  enable-parallel-deployments: true      
+build-parameters:      
+  before-all:      
+    - builder: custom      
+      commands:      
+        - npm ci      
+        - npm install --production      
+        - npm install @sap-cloud-sdk/resilience --production      
+        - npm install @sap-cloud-sdk/http-client --production      
+        - npm install @sap/xb-msg-amqp-v100 --production      
+        - npm update --package-lock-only      
+        - npx -p @sap/cds-dk cds build --production      

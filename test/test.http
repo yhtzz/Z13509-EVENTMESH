@@ -1,0 +1,16 @@
+###新建bp
+POST http://localhost:4004/odata/v4/api-business-partner/A_BusinessPartner
+Content-Type: application/json
+
+{"BusinessPartner": "123456","BusinessPartnerFullName": "New"}
+###更新bp
+PUT http://localhost:4004/odata/v4/api-business-partner/A_BusinessPartner(BusinessPartner='123456')
+Content-Type: application/json
+
+{"BusinessPartner": "123456","BusinessPartnerFullName": "chanage"}
+
+###推送数据
+POST http://localhost:4004/rest/service/risk/webhook
+Content-Type: application/cloudevents+json; charset=utf-8
+
+{"type":"sap.s4.beh.businesspartner.v1.BusinessPartner.Changed.v1","specversion":"1.0","source":"/default/sap.s4.beh/S4HCLNT200","id":"000c299c-3785-1eee-a9af-c3eb242e97df","time":"2023-12-28T12:39:20Z","datacontenttype":"application/json","data":{"BusinessPartner":"Z23255"}}

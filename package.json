@@ -1,0 +1,101 @@
+{
+  "name": "z13509-eventmesh",
+  "version": "1.0.0",
+  "description": "A simple CAP project.",
+  "repository": "<Add your repository here>",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@sap-cloud-sdk/http-client": "^3.12.1",
+    "@sap-cloud-sdk/resilience": "^3.12.1",
+    "@sap/cds": "^7",
+    "@sap/cds-hana": "^2",
+    "@sap/hdi-deploy": "^5.0.1",
+    "@sap/xb-msg-amqp-v100": "^0.9.58",
+    "@sap/xssec": "^3",
+    "cds-swagger-ui-express": "^0.8.0",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^1",
+    "@sap/cds-dk": "^7",
+    "@sap/ux-specification": "^1.120.6",
+    "rimraf": "^3.0.2"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch-extrisks": "cds watch --open extrisks/webapp/index.html?sap-ui-xx-viewCache=false",
+    "undeploy": "cf undeploy z13509-eventmesh --delete-services --delete-service-keys --delete-service-brokers",
+    "build": "rimraf resources mta_archives && mbt build --mtar archive",
+    "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
+    "watch-eventmesh": "cds watch --open eventmesh/webapp/index.html?sap-ui-xx-viewCache=false"
+  },
+  "cds": {
+    "requires": {
+      "API_BUSINESS_PARTNER": {
+        "kind": "odata-v2",
+        "mode": "srv/external/API_BUSINESS_PARTNER-extended",
+        "[sandbox]": {
+          "credentials": {
+            "url": "https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata/sap/API_BUSINESS_PARTNER/"
+          }
+        },
+        "[production]": {
+          "credentials": {
+            "path": "/sap/opu/odata/sap/API_BUSINESS_PARTNER",
+            "destination": "HANDDM202"
+          }
+        },
+        "[hybrid]": {
+          "credentials": {
+            "url": "http://yhts4dev01.dummy.nodomain:8080/sap/opu/odata/sap/API_BUSINESS_PARTNER"
+          }
+        },
+        "[locx]": {
+          "credentials": {
+            "url": "http://yhts4dev01.dummy.nodomain:8080/sap/opu/odata/sap/API_BUSINESS_PARTNER"
+          }
+        }
+      },
+      "messaging": {
+        "kind": "local-messaging",
+        "[production]": {
+          "kind": "enterprise-messaging-shared",
+          "format": "cloudevents",
+          "publishPrefix": "handdm2/eventing/s4hc/",
+          "subscribePrefix": "+/+/+/ce/",
+          "queue": {
+            "name": "handdm2/eventing/s4hc/z13509-risk-srv/con"
+          }
+        },
+        "[hybrid]": {
+          "kind": "enterprise-messaging-shared",
+          "format": "cloudevents",
+          "publishPrefix": "handdm2/eventing/s4hc/",
+          "subscribePrefix": "+/+/+/ce/",
+          "queue": {
+            "name": "handdm2/eventing/s4hc/z13509-risk-srv/con"
+          }
+        }
+      },
+      "[production]": {
+        "db": "hana",
+        "auth": "xsuaa"
+      },
+      "[hybrid]": {
+        "db": "hana"
+      },
+      "[loc]": {
+        "db": {
+          "kind": "sqlite",
+          "credentials": {
+            "url": "./db/cpapp.db"
+          }
+        }
+      }
+    }
+  },
+  "sapux": [
+    "app/eventmesh"
+  ]
+}
